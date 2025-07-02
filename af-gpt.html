@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AF-GPT Prompt Optimizer</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c;
+            /* Dark background */
+            color: #e2e8f0;
+            /* Light text */
+        }
+
+        /* Custom scrollbar for textareas */
+        textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        textarea::-webkit-scrollbar-track {
+            background: #2d3748;
+            border-radius: 10px;
+        }
+
+        textarea::-webkit-scrollbar-thumb {
+            background: #4a5568;
+            border-radius: 10px;
+        }
+
+        textarea::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+
+        /* Custom modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: #2d3748;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
+            max-width: 90%;
+            width: 400px;
+            text-align: center;
+        }
+
+        .modal-button {
+            @apply px-4 py-2 rounded-lg font-semibold transition-colors duration-200;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-4xl border border-gray-700">
+        <h1 class="text-4xl font-bold text-center mb-8 text-blue-400">AF-GPT Prompt Optimizer</h1>
+
+        <!-- Welcome Message -->
+        <div id="welcome-message" class="mb-8 p-6 bg-gray-700 rounded-lg shadow-inner">
+            <p class="text-lg mb-4">Hello! I'm AF-GPT, your AI prompt optimizer. I transform vague requests into
+                precise, effective prompts that deliver better results.</p>
+            <p class="text-lg font-semibold mb-2">What I need to know:</p>
+            <ul class="list-disc list-inside ml-4 text-gray-300">
+                <li><span class="font-bold">Target AI:</span> ChatGPT, Claude, Gemini, or Other</li>
+                <li><span class="font-bold">Prompt Style:</span> DETAIL (I'll ask clarifying questions first) or BASIC
+                    (quick optimization)</li>
+            </ul>
+            <p class="text-lg font-semibold mt-4 mb-2">Examples:</p>
+            <ul class="list-disc list-inside ml-4 text-gray-300">
+                <li><span class="font-mono bg-gray-600 px-2 py-1 rounded">"DETAIL using ChatGPT — Write me a marketing
+                        email"</span></li>
+                <li><span class="font-mono bg-gray-600 px-2 py-1 rounded">"BASIC using Claude — Help with my
+                        resume"</span></li>
+            </ul>
+            <p class="text-lg mt-4 text-gray-300">Just share your rough prompt and I'll handle the optimization!</p>
+        </div>
+
+        <!-- Input Section -->
+        <div class="mb-8">
+            <label for="rough-prompt" class="block text-lg font-medium mb-2 text-gray-300">Your Rough Prompt:</label>
+            <textarea id="rough-prompt" rows="6"
+                class="w-full p-4 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100 resize-y"></textarea>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div>
+                <label for="target-ai" class="block text-lg font-medium mb-2 text-gray-300">Target AI:</label>
+                <select id="target-ai"
+                    class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100">
+                    <option value="ChatGPT">ChatGPT/GPT-4</option>
+                    <option value="Claude">Claude</option>
+                    <option value="Gemini">Gemini</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div>
+                <label for="prompt-style" class="block text-lg font-medium mb-2 text-gray-300">Prompt Style:</label>
+                <select id="prompt-style"
+                    class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100">
+                    <option value="DETAIL">DETAIL Mode</option>
+                    <option value="BASIC">BASIC Mode</option>
+                </select>
+            </div>
+        </div>
+
+        <button id="optimize-button"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800">
+            Optimize Prompt
+        </button>
+
+        <!-- Output Section -->
+        <div id="output-section" class="mt-10 p-6 bg-gray-700 rounded-xl shadow-inner border border-gray-600 hidden">
+            <h2 class="text-2xl font-bold mb-4 text-blue-400">Your Optimized Prompt:</h2>
+            <pre id="optimized-prompt"
+                class="whitespace-pre-wrap p-4 bg-gray-800 rounded-lg border border-gray-600 text-gray-100 text-base leading-relaxed"></pre>
+
+            <div id="what-changed-section" class="mt-6">
+                <h3 class="text-xl font-semibold mb-2 text-gray-300">What Changed:</h3>
+                <ul id="what-changed-list" class="list-disc list-inside ml-4 text-gray-200"></ul>
+            </div>
+
+            <div id="techniques-applied-section" class="mt-6">
+                <h3 class="text-xl font-semibold mb-2 text-gray-300">Techniques Applied:</h3>
+                <ul id="techniques-applied-list" class="list-disc list-inside ml-4 text-gray-200"></ul>
+            </div>
+
+            <div id="pro-tip-section" class="mt-6">
+                <h3 class="text-xl font-semibold mb-2 text-gray-300">Pro Tip:</h3>
+                <p id="pro-tip-text" class="text-gray-200"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Modal for messages -->
+    <div id="custom-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <p id="modal-message" class="text-lg mb-6 text-gray-200"></p>
+            <div id="modal-buttons" class="flex justify-center space-x-4">
+                <button id="modal-confirm"
+                    class="modal-button bg-blue-600 hover:bg-blue-700 text-white">Confirm</button>
+                <button id="modal-cancel" class="modal-button bg-gray-600 hover:bg-gray-700 text-white">Cancel</button>
+                <button id="modal-ok" class="modal-button bg-blue-600 hover:bg-blue-700 text-white">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const roughPromptInput = document.getElementById('rough-prompt');
+            const targetAiSelect = document.getElementById('target-ai');
+            const promptStyleSelect = document.getElementById('prompt-style');
+            const optimizeButton = document.getElementById('optimize-button');
+            const outputSection = document.getElementById('output-section');
+            const optimizedPromptPre = document.getElementById('optimized-prompt');
+            const whatChangedList = document.getElementById('what-changed-list');
+            const techniquesAppliedList = document.getElementById('techniques-applied-list');
+            const proTipText = document.getElementById('pro-tip-text');
+
+            // Modal elements
+            const customModal = document.getElementById('custom-modal');
+            const modalMessage = document.getElementById('modal-message');
+            const modalConfirmBtn = document.getElementById('modal-confirm');
+            const modalCancelBtn = document.getElementById('modal-cancel');
+            const modalOkBtn = document.getElementById('modal-ok');
+
+            /**
+             * Displays a custom modal with a message and buttons.
+             * @param {string} message - The message to display.
+             * @param {('alert'|'confirm')} type - The type of modal ('alert' or 'confirm').
+             * @returns {Promise<boolean>} - Resolves to true for 'OK' or 'Confirm', false for 'Cancel'.
+             */
+            function showCustomModal(message, type = 'alert') {
+                return new Promise(resolve => {
+                    modalMessage.textContent = message;
+                    customModal.classList.remove('hidden');
+
+                    modalConfirmBtn.classList.add('hidden');
+                    modalCancelBtn.classList.add('hidden');
+                    modalOkBtn.classList.add('hidden');
+
+                    if (type === 'confirm') {
+                        modalConfirmBtn.classList.remove('hidden');
+                        modalCancelBtn.classList.remove('hidden');
+                    } else {
+                        modalOkBtn.classList.remove('hidden');
+                    }
+
+                    const handleConfirm = () => {
+                        customModal.classList.add('hidden');
+                        modalConfirmBtn.removeEventListener('click', handleConfirm);
+                        modalCancelBtn.removeEventListener('click', handleCancel);
+                        modalOkBtn.removeEventListener('click', handleOk);
+                        resolve(true);
+                    };
+
+                    const handleCancel = () => {
+                        customModal.classList.add('hidden');
+                        modalConfirmBtn.removeEventListener('click', handleConfirm);
+                        modalCancelBtn.removeEventListener('click', handleCancel);
+                        modalOkBtn.removeEventListener('click', handleOk);
+                        resolve(false);
+                    };
+
+                    const handleOk = () => {
+                        customModal.classList.add('hidden');
+                        modalConfirmBtn.removeEventListener('click', handleConfirm);
+                        modalCancelBtn.removeEventListener('click', handleCancel);
+                        modalOkBtn.removeEventListener('click', handleOk);
+                        resolve(true);
+                    };
+
+                    modalConfirmBtn.addEventListener('click', handleConfirm);
+                    modalCancelBtn.addEventListener('click', handleCancel);
+                    modalOkBtn.addEventListener('click', handleOk);
+                });
+            }
+
+            // AF-GPT Core Logic
+            const AF_GPT = {
+                /**
+                 * Deconstructs the raw prompt to extract core intent, entities, and requirements.
+                 * @param {string} rawPrompt
+                 * @returns {object} - An object containing deconstructed elements.
+                 */
+                deconstruct: (rawPrompt) => {
+                    const intent = AF_GPT.inferIntent(rawPrompt);
+                    const entities = AF_GPT.extractEntities(rawPrompt);
+                    const outputRequirements = AF_GPT.extractOutputRequirements(rawPrompt);
+                    const context = AF_GPT.extractContext(rawPrompt);
+
+                    return {
+                        intent,
+                        entities,
+                        outputRequirements,
+                        context,
+                        provided: {
+                            length: rawPrompt.length,
+                            hasKeywords: /(write|create|generate|explain|summarize|analyze|design|develop)/i.test(rawPrompt)
+                        },
+                        missing: {} // For a full AI, this would be more complex
+                    };
+                },
+
+                /**
+                 * Diagnoses the deconstructed prompt for clarity, specificity, and completeness.
+                 * @param {object} deconstructed
+                 * @returns {object} - An object containing diagnosis results.
+                 */
+                diagnose: (deconstructed) => {
+                    const clarityGaps = deconstructed.provided.length < 20 ? "Prompt is too short and vague." : "";
+                    const ambiguity = deconstructed.entities.length === 0 ? "No clear entities identified." : "";
+                    const specificity = deconstructed.outputRequirements.length === 0 ? "Output format not specified." : "";
+
+                    return {
+                        clarityGaps,
+                        ambiguity,
+                        specificity,
+                        completeness: !clarityGaps && !ambiguity && !specificity
+                    };
+                },
+
+                /**
+                 * Develops the optimized prompt based on the request type and chosen mode.
+                 * @param {string} rawPrompt
+                 * @param {object} deconstructed
+                 * @param {object} diagnosis
+                 * @param {string} targetAI
+                 * @param {string} promptStyle
+                 * @returns {object} - Contains the optimized prompt, changes, techniques, and pro tip.
+                 */
+                develop: (rawPrompt, deconstructed, diagnosis, targetAI, promptStyle) => {
+                    let optimizedPrompt = rawPrompt.trim();
+                    const changes = [];
+                    const techniques = [];
+                    let proTip = "";
+                    let aiRole = AF_GPT.assignAIRole(deconstructed.intent, rawPrompt);
+
+                    // --- Foundation Techniques ---
+                    // 1. Role Assignment
+                    if (!optimizedPrompt.toLowerCase().includes("as an ai") && !optimizedPrompt.toLowerCase().includes("you are a")) {
+                        optimizedPrompt = `As an AI ${aiRole}, your task is to ${optimizedPrompt.toLowerCase().startsWith("write") || optimizedPrompt.toLowerCase().startsWith("create") || optimizedPrompt.toLowerCase().startsWith("generate") ? "" : "write/create/generate"} ${optimizedPrompt.toLowerCase().startsWith("your task is to") ? "" : ""}`;
+                        optimizedPrompt = `As an AI ${aiRole}, your task is to ${rawPrompt.trim()}`;
+                        changes.push("Assigned a specific AI role to guide the model's persona.");
+                        techniques.push("Role Assignment");
+                    }
+
+                    // 2. Context Layering (basic simulation)
+                    if (deconstructed.context) {
+                        optimizedPrompt = `Context: ${deconstructed.context}\n\n${optimizedPrompt}`;
+                        changes.push("Added relevant context to provide necessary background information.");
+                        techniques.push("Context Layering");
+                    }
+
+                    // 3. Output Specifications
+                    if (deconstructed.outputRequirements.length > 0) {
+                        optimizedPrompt += `\n\nOutput Requirements: ${deconstructed.outputRequirements.join(', ')}.`;
+                        changes.push("Clearly defined output requirements for format and content.");
+                        techniques.push("Output Specifications");
+                    } else if (promptStyle === "DETAIL") {
+                        optimizedPrompt += `\n\nOutput Requirements: Please specify the desired format (e.g., bullet points, paragraph, code snippet) and any length constraints.`;
+                        changes.push("Prompted for missing output format details.");
+                    }
+
+                    // 4. Task Decomposition (simple)
+                    if (rawPrompt.split(' ').length > 30 && promptStyle === "DETAIL") {
+                        optimizedPrompt += `\n\nBreak down this task into logical sub-steps to ensure comprehensive coverage.`;
+                        changes.push("Suggested task decomposition for complex requests.");
+                        techniques.push("Task Decomposition");
+                    }
+
+                    // --- Advanced Techniques based on Request Type ---
+                    const requestType = AF_GPT.determineRequestType(deconstructed.intent);
+
+                    if (requestType === "Creative") {
+                        optimizedPrompt += `\n\nConsider multiple perspectives and emphasize a specific tone (e.g., inspiring, humorous, formal).`;
+                        techniques.push("Multi-perspective Analysis", "Tone Emphasis");
+                        changes.push("Encouraged multi-perspective thinking and tone control for creative output.");
+                    } else if (requestType === "Technical") {
+                        optimizedPrompt += `\n\nAdhere strictly to the following constraints (if any) and ensure precision in your response.`;
+                        techniques.push("Constraint-based", "Precision Focus");
+                        changes.push("Emphasized adherence to constraints and precision for technical tasks.");
+                    } else if (requestType === "Educational") {
+                        optimizedPrompt += `\n\nProvide 2-3 clear and concise examples to illustrate your points. Structure your response with clear headings and bullet points.`;
+                        techniques.push("Few-shot Examples", "Clear Structure");
+                        changes.push("Requested examples and structured formatting for educational content.");
+                    } else if (requestType === "Complex") {
+                        optimizedPrompt += `\n\nThink step-by-step and use a systematic framework (e.g., problem-solution, cause-effect) to organize your thoughts.`;
+                        techniques.push("Chain-of-thought", "Systematic Frameworks");
+                        changes.push("Implemented chain-of-thought and systematic frameworks for complex tasks.");
+                    }
+
+                    // --- Platform Notes ---
+                    if (targetAI === "ChatGPT") {
+                        optimizedPrompt = `[For ChatGPT/GPT-4]\n${optimizedPrompt}\n\nConsider structured sections and conversation starters.`;
+                        proTip = "For ChatGPT, break down complex prompts into smaller, conversational chunks. Use clear headings.";
+                        techniques.push("Structured Sections (ChatGPT)");
+                    } else if (targetAI === "Claude") {
+                        optimizedPrompt = `[For Claude]\n${optimizedPrompt}\n\nLeverage Claude's longer context window and reasoning frameworks.`;
+                        proTip = "Claude excels with longer contexts. Provide comprehensive background and ask for detailed reasoning.";
+                        techniques.push("Longer Context (Claude)", "Reasoning Frameworks (Claude)");
+                    } else if (targetAI === "Gemini") {
+                        optimizedPrompt = `[For Gemini]\n${optimizedPrompt}\n\nFocus on creative tasks and comparative analysis.`;
+                        proTip = "Gemini is great for creative writing and comparing different options. Ask for diverse ideas.";
+                        techniques.push("Creative Tasks (Gemini)", "Comparative Analysis (Gemini)");
+                    } else { // Other
+                        proTip = "For other AIs, always apply universal best practices: clarity, specificity, and structured output requests.";
+                    }
+
+                    // --- Mode Specific Adjustments ---
+                    if (promptStyle === "BASIC") {
+                        // Remove some of the "ask for more" or detailed suggestions
+                        optimizedPrompt = optimizedPrompt.replace(/\n\n(?:Consider multiple perspectives|Adhere strictly to|Provide 2-3 clear and concise examples|Think step-by-step).*/g, '');
+                        optimizedPrompt = optimizedPrompt.replace(/\n\nOutput Requirements: Please specify the desired format.*/g, '');
+                        optimizedPrompt = optimizedPrompt.replace(/\n\nBreak down this task into logical sub-steps.*/g, '');
+                        changes.push("Applied core techniques only for a quick optimization.");
+                        techniques.push("Core Techniques Only");
+                    } else { // DETAIL mode
+                        if (diagnosis.clarityGaps || diagnosis.ambiguity || diagnosis.specificity) {
+                            optimizedPrompt += `\n\nClarifying Questions: ${diagnosis.clarityGaps ? '- ' + diagnosis.clarityGaps : ''} ${diagnosis.ambiguity ? '- ' + diagnosis.ambiguity : ''} ${diagnosis.specificity ? '- ' + diagnosis.specificity : ''} Please provide more details on these points.`;
+                            changes.push("Added clarifying questions based on diagnosis.");
+                        }
+                    }
+
+                    // Final formatting adjustments
+                    optimizedPrompt = optimizedPrompt.replace(/\s*\n\s*\n\s*\n/g, '\n\n').trim(); // Remove excessive newlines
+
+                    return {
+                        optimizedPrompt,
+                        changes,
+                        techniques,
+                        proTip
+                    };
+                },
+
+                // Helper functions for deconstruction and development
+                inferIntent: (prompt) => {
+                    prompt = prompt.toLowerCase();
+                    if (/(write|create|generate|draft|compose)/.test(prompt)) return "Creative";
+                    if (/(explain|summarize|teach|educate)/.test(prompt)) return "Educational";
+                    if (/(analyze|solve|debug|implement|design system|technical|code)/.test(prompt)) return "Technical";
+                    if (/(plan|strategy|complex|multi-step)/.test(prompt)) return "Complex";
+                    return "General";
+                },
+
+                extractEntities: (prompt) => {
+                    const entities = [];
+                    // Simple keyword extraction for demonstration
+                    if (/(email|letter|story|poem|blog post)/i.test(prompt)) entities.push("document type");
+                    if (/(marketing|sales|support|product)/i.test(prompt)) entities.push("domain");
+                    if (/(code|function|algorithm|script)/i.test(prompt)) entities.push("code element");
+                    return entities;
+                },
+
+                extractOutputRequirements: (prompt) => {
+                    const requirements = [];
+                    if (/(bullet points|list)/i.test(prompt)) requirements.push("bullet points");
+                    if (/(paragraph|essay|report)/i.test(prompt)) requirements.push("paragraph format");
+                    if (/(code|json|xml)/i.test(prompt)) requirements.push("code/structured format");
+                    if (/(max \d+ words|min \d+ words|short|long)/i.test(prompt)) requirements.push("length constraint");
+                    return requirements;
+                },
+
+                extractContext: (prompt) => {
+                    // This is a very basic simulation. A real AF-GPT would need more advanced NLP.
+                    const contextKeywords = /(about|regarding|for the purpose of|in the context of)/i;
+                    const match = prompt.match(contextKeywords);
+                    if (match && match.index !== -1) {
+                        return prompt.substring(match.index).split('. ')[0]; // Take up to the first sentence after context keyword
+                    }
+                    return "";
+                },
+
+                assignAIRole: (intent, prompt) => {
+                    prompt = prompt.toLowerCase();
+                    if (prompt.includes("marketing")) return "marketing expert";
+                    if (prompt.includes("coding") || prompt.includes("develop") || prompt.includes("software")) return "senior software engineer";
+                    if (prompt.includes("story") || prompt.includes("poem") || prompt.includes("creative")) return "creative writer";
+                    if (prompt.includes("education") || prompt.includes("explain") || prompt.includes("teach")) return "experienced educator";
+                    if (intent === "Technical") return "technical specialist";
+                    if (intent === "Creative") return "creative assistant";
+                    if (intent === "Educational") return "knowledgeable instructor";
+                    if (intent === "Complex") return "strategic consultant";
+                    return "expert assistant";
+                },
+
+                determineRequestType: (intent) => {
+                    if (intent === "Creative") return "Creative";
+                    if (intent === "Technical") return "Technical";
+                    if (intent === "Educational") return "Educational";
+                    if (intent === "Complex") return "Complex";
+                    return "General"; // Fallback
+                },
+
+                autoDetectComplexity: (rawPrompt) => {
+                    const wordCount = rawPrompt.split(/\s+/).filter(word => word.length > 0).length;
+                    // Simple heuristic: more than 20 words or contains certain keywords suggests complexity
+                    if (wordCount > 20 || /(analyze|design|develop|strategy|complex|multi-step|research)/i.test(rawPrompt)) {
+                        return "DETAIL";
+                    }
+                    return "BASIC";
+                }
+            };
+
+            optimizeButton.addEventListener('click', async () => {
+                const rawPrompt = roughPromptInput.value.trim();
+                if (!rawPrompt) {
+                    await showCustomModal("Please enter a rough prompt to optimize.", 'alert');
+                    return;
+                }
+
+                const targetAI = targetAiSelect.value;
+                let promptStyle = promptStyleSelect.value;
+
+                // Auto-detect complexity and inform user
+                const detectedComplexity = AF_GPT.autoDetectComplexity(rawPrompt);
+                if (detectedComplexity !== promptStyle) {
+                    const userOverride = await showCustomModal(
+                        `Based on your prompt, I recommend "${detectedComplexity}" mode. You currently have "${promptStyle}" selected. Do you want to proceed with "${detectedComplexity}" mode?`,
+                        'confirm'
+                    );
+                    if (userOverride) {
+                        promptStyle = detectedComplexity;
+                        promptStyleSelect.value = detectedComplexity; // Update dropdown for visual consistency
+                    }
+                }
+
+                // Deconstruct, Diagnose, Develop
+                const deconstructed = AF_GPT.deconstruct(rawPrompt);
+                const diagnosis = AF_GPT.diagnose(deconstructed);
+                const result = AF_GPT.develop(rawPrompt, deconstructed, diagnosis, targetAI, promptStyle);
+
+                // Display results
+                optimizedPromptPre.textContent = result.optimizedPrompt;
+
+                // Clear previous lists
+                whatChangedList.innerHTML = '';
+                techniquesAppliedList.innerHTML = '';
+
+                // Populate "What Changed"
+                if (result.changes.length > 0) {
+                    result.changes.forEach(change => {
+                        const li = document.createElement('li');
+                        li.textContent = change;
+                        whatChangedList.appendChild(li);
+                    });
+                    document.getElementById('what-changed-section').classList.remove('hidden');
+                } else {
+                    document.getElementById('what-changed-section').classList.add('hidden');
+                }
+
+                // Populate "Techniques Applied"
+                if (result.techniques.length > 0) {
+                    result.techniques.forEach(technique => {
+                        const li = document.createElement('li');
+                        li.textContent = technique;
+                        techniquesAppliedList.appendChild(li);
+                    });
+                    document.getElementById('techniques-applied-section').classList.remove('hidden');
+                } else {
+                    document.getElementById('techniques-applied-section').classList.add('hidden');
+                }
+
+                // Populate "Pro Tip"
+                if (result.proTip) {
+                    proTipText.textContent = result.proTip;
+                    document.getElementById('pro-tip-section').classList.remove('hidden');
+                } else {
+                    document.getElementById('pro-tip-section').classList.add('hidden');
+                }
+
+                outputSection.classList.remove('hidden');
+            });
+        });
+    </script>
+</body>
+
+</html>
